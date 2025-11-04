@@ -99,13 +99,8 @@ class App:
     def anuencias_almoxarife(self):
         subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasAlmox.py"])  
 
-    def abrir_os(self):
-        print("Abrir tela de OS")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DocsGen_OS.py"])
-
     def gerador_os(self):
-        print("Abrir tela de OS")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_OS.py"])        
+        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DocsGen_OS.py"])
 
     def abrir_sit(self):
         print("Abrir tela de SIT")
