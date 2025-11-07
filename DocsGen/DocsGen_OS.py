@@ -555,7 +555,7 @@ class genOrdenServico:
         
         hseNome = self.cbbx_hse.get()
 
-        if hseNome == "Manoel Jefete":
+        if hseNome == "MANOEL JEFETE":
             nomeHSE = "MANOEL JEFETE DA SILVA TENORIO - MEDSE"
             registroHSE = "MTE/RN: 1805"
             funcaoHSE = "Técnico(a) de Segurança do Trabalho"
