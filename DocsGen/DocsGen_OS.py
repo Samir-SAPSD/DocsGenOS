@@ -230,7 +230,7 @@ class genOrdenServico:
         self.ckbx_mecan_13.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         self.ckbx_mecan_14 = ttk.Checkbutton(lblframe_riscos_mecanicos, text=" • Trânsito de veículos pesados", variable=self.var_ckbx_mecan_14)
         self.ckbx_mecan_14.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-        self.ckbx_mecan_15 = ttk.Checkbutton(lblframe_riscos_mecanicos, text=" • Diferença de nível menor ou igual a dois metros", variable=self.var_ckbx_mecan_15)
+        self.ckbx_mecan_15 = ttk.Checkbutton(lblframe_riscos_mecanicos, text=" • Diferença de nível menor a dois metros", variable=self.var_ckbx_mecan_15)
         self.ckbx_mecan_15.grid(row=3, column=2, sticky=tk.W, padx=5, pady=5)
         self.ckbx_mecan_16 = ttk.Checkbutton(lblframe_riscos_mecanicos, text=" • Não se Aplica", variable=self.var_ckbx_mecan_16)
         self.ckbx_mecan_16.grid(row=3, column=3, sticky=tk.W, padx=5, pady=5)
