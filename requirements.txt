@@ -1,12 +1,7 @@
-os
-shutil
-fitz
-tkinter
 ttkbootstrap
 openpyxl
 PyMuPDF
 comtypes
-re
 python-docx
 plyer
 Pillow
