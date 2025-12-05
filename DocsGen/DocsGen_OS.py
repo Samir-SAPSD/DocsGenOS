@@ -34,7 +34,7 @@ class genOrdenServico:
         self.dir_pasta_selecionada = ""
 
         # Carregar a imagem
-        self.bg_image = Image.open(r"C:\PyProjects\DocsGen\bkg_osst.png")
+        self.bg_image = Image.open(os.path.join(caminho_base, "bkg_osst.png"))
         print(os.path.abspath(__file__))
         self.bg_photo = ImageTk.PhotoImage(self.bg_image)
         
@@ -320,6 +320,7 @@ class genOrdenServico:
                     "COORDENADOR DE QUALIDADE",
                     "ENGENHEIRO DE ATENDIMENTO AO CLIENTE",
                     "ENGENHEIRO DE TECNOLOGIA",
+                    "LIDER DE PROJETOS",
                     "PLANEJADOR",
                     "PROGRAMADOR",
                     "SUPERVISOR DE MATERIAIS",
@@ -358,6 +359,7 @@ class genOrdenServico:
                 self.cbbx_funcao['values'] = [
                     "SUPERVISOR DE INSTALACOES",
                     "TECNICO DE SERVICOS ESPECIAIS",
+                    "TECNICO LIDER DE ELETRICA",
                     "TECNICO O&M ESPECIALISTA",
                     "TECNICO O&M JR",
                     "TECNICO O&M LIDER",

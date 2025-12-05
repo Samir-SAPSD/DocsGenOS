@@ -1,8 +1,19 @@
 import tkinter as tk
 import ttkbootstrap as tb
 import subprocess
+import os
+import sys
 from tkinter import ttk
 from PIL import Image, ImageTk
+
+# Diretório base do script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Encontrar pythonw.exe
+PYTHON_DIR = os.path.dirname(sys.executable)
+PYTHONW = os.path.join(PYTHON_DIR, "pythonw.exe")
+if not os.path.exists(PYTHONW):
+    PYTHONW = sys.executable
 
 class App:
     def __init__(self, root):
@@ -18,7 +29,7 @@ class App:
         self.canvas = tk.Canvas(self.root, width=1280, height=720)
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
-        bkg_img = Image.open(r"C:\PyProjects\DocsGen\bkg_docsgen.png")
+        bkg_img = Image.open(os.path.join(BASE_DIR, "bkg_docsgen.png"))
         bkg_img = bkg_img.resize((1280, 720), Image.Resampling.LANCZOS)
         self.bkg = ImageTk.PhotoImage(bkg_img)
         self.canvas.create_image(0, 0, image=self.bkg, anchor="nw")
@@ -73,46 +84,46 @@ class App:
 
     def abrir_anuencias(self):
         print("Abrir tela de Anuências")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DocsGen_Anuencias.py"]) 
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_Anuencias.py")]) 
 
     def anuencias_tec_om(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecOM.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecOM.py")])
 
     def anuencias_sup_om(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasSupOM.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasSupOM.py")])
 
     def anuencias_tec_pa(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecPA.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecPA.py")])
 
     def anuencias_tec_pa_esp(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecPAESP.py"])            
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecPAESP.py")])            
 
     def anuencias_tec_seg(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecSEG.py"])             
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecSEG.py")])             
 
     def anuencias_tec_serv_esp_op(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecSERVESPCIOP.py"])      
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecSERVESPCIOP.py")])      
 
     def anuencias_consultor_adm(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasTecCONSULTORADM.py"])                   
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecCONSULTORADM.py")])                   
 
     def anuencias_almoxarife(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_AnuenciasAlmox.py"])  
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasAlmox.py")])  
 
     def gerador_os(self):
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DocsGen_OS.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_OS.py")])
 
     def abrir_sit(self):
         print("Abrir tela de SIT")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_SIT.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_SIT.py")])
 
     def abrir_lift(self):
         print("Abrir tela de Lift User")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_LiftUser.py"])        
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_LiftUser.py")])        
 
     def abrir_assinaturas(self):
         print("Abrir tela de Assinaturas")
-        subprocess.Popen(["pythonw", r"C:\PyProjects\DocsGen\DG_RemoveSign.py"])
+        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_RemoveSign.py")])
 
 if __name__ == "__main__":
     root = tk.Tk()
