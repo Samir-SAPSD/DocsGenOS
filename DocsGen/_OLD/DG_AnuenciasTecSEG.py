@@ -2,6 +2,8 @@ import os
 import tkinter as tk
 import comtypes.client
 import re
+import threading
+import pythoncom
 from plyer import notification
 from tkinter import ttk, filedialog, messagebox
 from docx import Document
@@ -350,6 +352,101 @@ class genAnuencias:
         doc.Close()
         word.Quit()              
 
+    def mostrar_progresso(self):
+        # Criar uma janela de progresso
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Processando")
+        progress_window.geometry("300x150")
+        progress_window.resizable(False, False)
+        
+        # Centralizar a janela
+        window_width = 300
+        window_height = 150
+        screen_width = progress_window.winfo_screenwidth()
+        screen_height = progress_window.winfo_screenheight()
+        x_cordinate = int((screen_width/2) - (window_width/2))
+        y_cordinate = int((screen_height/2) - (window_height/2))
+        progress_window.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+
+        # Label de informação
+        lbl_info = ttk.Label(progress_window, text="Gerando documentos...\nPor favor, aguarde.", justify="center")
+        lbl_info.pack(pady=20)
+
+        # Barra de progresso indeterminada
+        progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
+        progress_bar.pack(fill='x', padx=20, pady=10)
+        progress_bar.start(10)
+
+        return progress_window
+
+    def _executar_geracao(self, progress_window):
+        try:
+            # Inicializar COM para esta thread
+            pythoncom.CoInitialize()
+            
+            var_check = 1
+            
+            # Check Tecnicos O&M
+            if self.var_nr10_tec_seg.get():                
+                self.nr10_tec_seg(self.dados)  
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR10 Gerada com Sucesso!",
+                    timeout=5
+                ))              
+
+            if self.var_nr10_sep_tec_seg.get():                
+                self.nr10_sep_tec_seg(self.dados)                
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR10 SEP Gerada com Sucesso!",
+                    timeout=5
+                ))    
+
+            if self.var_nr12_tec_seg.get():                
+                self.nr12_tec_seg(self.dados)  
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR12 Gerada com Sucesso!",
+                    timeout=5
+                ))                                     
+
+            if self.var_nr33_tec_seg.get():                
+                self.nr33_tec_seg(self.dados)               
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR33 Gerada com Sucesso!",
+                    timeout=5
+                ))    
+
+            if self.var_nr35_tec_seg.get():                
+                self.nr35_tec_seg(self.dados)
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR35 Gerada com Sucesso!",
+                    timeout=5
+                ))                        
+
+            # Notificação final e fechamento da janela de progresso
+            self.root.after(0, lambda: [
+                progress_window.destroy(),
+                notification.notify(
+                    title="Concluído",
+                    message="O processo foi finalizado!",
+                    timeout=10
+                ),
+                messagebox.showinfo("Alerta!", "Documento(s) Salvo(s) com Sucesso!")
+            ])
+
+        except Exception as e:
+            self.root.after(0, lambda: [
+                progress_window.destroy(),
+                messagebox.showerror("Erro", f"Ocorreu um erro durante a geração: {str(e)}")
+            ])
+        finally:
+            # Desinicializar COM
+            pythoncom.CoUninitialize()
+
     def verificar_checkbuttons(self):      
 
         cpf_digitado = self.entr_CPF.get()
@@ -363,73 +460,13 @@ class genAnuencias:
 
             if self.validar_cpf(cpf_digitado):              
 
-                notification.notify(
-                    title="Aviso",
-                    message="O processo está em execução, acompanhe o(s) documento(s) gerados na pasta selecionada...",
-                    timeout=10  # Tempo que a notificação ficará visível (segundos)
-                )
-
-                var_check = 1
+                # Iniciar a janela de progresso
+                progress_window = self.mostrar_progresso()
                 
-                # Check Tecnicos O&M
-                if self.var_nr10_tec_seg.get():                
-                    self.nr10_tec_seg(self.dados)  
-                    notification.notify(
-                        title="Aviso",
-                        message="NR10 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )              
-
-                if self.var_nr10_sep_tec_seg.get():                
-                    self.nr10_sep_tec_seg(self.dados)                
-                    notification.notify(
-                        title="Aviso",
-                        message="NR10 SEP Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )    
-
-                if self.var_nr12_tec_seg.get():                
-                    self.nr12_tec_seg(self.dados)  
-                    notification.notify(
-                        title="Aviso",
-                        message="NR12 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )                                     
-
-                if self.var_nr33_tec_seg.get():                
-                    self.nr33_tec_seg(self.dados)               
-                    notification.notify(
-                        title="Aviso",
-                        message="NR33 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )    
-
-                if self.var_nr35_tec_seg.get():                
-                    self.nr35_tec_seg(self.dados)
-                    notification.notify(
-                        title="Aviso",
-                        message="NR35 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )                        
-
-                # IF para sair da interção do LOOP
-                if var_check == 2:
-                    return
-                
-                else:
-                    
-                    # Notificação final
-                    notification.notify(
-                        title="Concluído",
-                        message="O processo foi finalizado!",
-                        timeout=10
-                    )
-
-                    messagebox.showinfo("Alerta!", "Documento(s) Salvo(s) com Sucesso!") 
-
-                    #self.lbl_avisoGeracao.grid_remove()
-
-                    return
+                # Iniciar a thread de geração
+                thread = threading.Thread(target=self._executar_geracao, args=(progress_window,))
+                thread.daemon = True
+                thread.start()
                 
             else:
                 messagebox.showinfo("Alerta!", "CPF Inválido!") 

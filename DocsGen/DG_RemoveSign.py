@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog, messagebox
 from tkinter import filedialog, messagebox
 from ttkbootstrap import Style
 from PIL import Image, ImageTk
+import threading
 
 class PDFConverterApp:
     def __init__(self, root):
@@ -80,6 +81,34 @@ class PDFConverterApp:
             messagebox.showerror("Erro", "Nenhum arquivo PDF selecionado.")
             return
 
+        # Mostrar janela de progresso
+        self.mostrar_progresso()
+
+    def mostrar_progresso(self):
+        """Exibe barra de progresso e inicia a geração em thread"""
+        self.janela_progress = tk.Toplevel(self.root)
+        self.janela_progress.title("Processando PDF...")
+        self.janela_progress.geometry("400x150")
+        self.janela_progress.resizable(False, False)
+        self.janela_progress.transient(self.root)
+        self.janela_progress.grab_set()
+        
+        # Centralizar
+        self.janela_progress.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (self.janela_progress.winfo_width() // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (self.janela_progress.winfo_height() // 2)
+        self.janela_progress.geometry(f"+{x}+{y}")
+        
+        ttk.Label(self.janela_progress, text="Processando PDF...\nPor favor, aguarde...", justify=tk.CENTER).pack(pady=20)
+        
+        self.progress = ttk.Progressbar(self.janela_progress, mode='indeterminate', length=350)
+        self.progress.pack(pady=10, padx=20)
+        self.progress.start()
+        
+        # Iniciar thread
+        threading.Thread(target=self._executar_geracao, daemon=True).start()
+
+    def _executar_geracao(self):
         try:
             # Diretório do arquivo original
             pasta_origem = os.path.dirname(self.pdf_path)
@@ -100,11 +129,14 @@ class PDFConverterApp:
             # Apagar pasta temporária
             shutil.rmtree(pasta_temp)
 
-            messagebox.showinfo("Sucesso", f"PDF salvo com sucesso em:\n{novo_pdf_path}")
+            self.root.after(0, lambda: messagebox.showinfo("Sucesso", f"PDF salvo com sucesso em:\n{novo_pdf_path}"))
 
         except Exception as e:
-            messagebox.showerror("Erro", f"Ocorreu um erro: {e}")        
-
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Ocorreu um erro: {e}"))
+        
+        finally:
+            self.root.after(0, self.janela_progress.destroy)
+        
 # Criar janela do Tkinter
 if __name__ == "__main__":
     root = tk.Tk()

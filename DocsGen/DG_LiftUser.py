@@ -9,6 +9,8 @@ from docx.enum.table import WD_ALIGN_VERTICAL
 from ttkbootstrap import Style
 from PIL import Image, ImageTk
 from datetime import datetime
+import threading
+import pythoncom
 
 # Obter a data de hoje
 hoje = datetime.today()
@@ -150,6 +152,62 @@ class genSIT:
         doc.Close()
         word.Quit()
 
+    def mostrar_progresso(self):
+        """Exibe barra de progresso e inicia a geração em thread"""
+        self.janela_progress = tk.Toplevel(self.root)
+        self.janela_progress.title("Gerando Lift User...")
+        self.janela_progress.geometry("400x150")
+        self.janela_progress.resizable(False, False)
+        self.janela_progress.transient(self.root)
+        self.janela_progress.grab_set()
+        
+        # Centralizar
+        self.janela_progress.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (self.janela_progress.winfo_width() // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (self.janela_progress.winfo_height() // 2)
+        self.janela_progress.geometry(f"+{x}+{y}")
+        
+        ttk.Label(self.janela_progress, text="Gerando Lift User...\nPor favor, aguarde...", justify=tk.CENTER).pack(pady=20)
+        
+        self.progress = ttk.Progressbar(self.janela_progress, mode='indeterminate', length=350)
+        self.progress.pack(pady=10, padx=20)
+        self.progress.start()
+        
+        # Iniciar thread
+        threading.Thread(target=self._executar_geracao, daemon=True).start()
+
+    def _executar_geracao(self):
+        try:
+            pythoncom.CoInitialize()
+            notification.notify(
+                title="Aviso",
+                message="O processo está em execução...",
+                timeout=5
+            )                   
+
+            self.gerar_sit(self.dados)
+            
+            notification.notify(
+                title="Aviso",
+                message="Lift User Gerado com Sucesso!",
+                timeout=5
+            )
+                            
+            # Notificação final
+            notification.notify(
+                title="Concluído",
+                message="O processo foi finalizado!",
+                timeout=5
+            )
+
+            self.root.after(0, lambda: messagebox.showinfo("Sucesso", "Documento(s) Salvo(s) com Sucesso!"))
+
+        except Exception as e:
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao gerar Lift User: {str(e)}"))
+        
+        finally:
+            self.root.after(0, self.janela_progress.destroy)
+
     def gerarDoc(self):      
 
         texto_pastaselecionada = self.lbl_pastaselecionada.cget("text")
@@ -160,29 +218,7 @@ class genSIT:
 
         else:    
 
-            notification.notify(
-                title="Aviso",
-                message="O processo está em execução, acompanhe o(s) documento(s) gerados na pasta selecionada...",
-                timeout=10  # Tempo que a notificação ficará visível (segundos)
-            )                   
-
-            self.gerar_sit(self.dados)
-            notification.notify(
-                title="Aviso",
-                message="Lift User Gerado com Sucesso!",
-                timeout=5  # Tempo que a notificação ficará visível (segundos)
-            )
-                            
-            # Notificação final
-            notification.notify(
-                title="Concluído",
-                message="O processo foi finalizado!",
-                timeout=10
-            )
-
-            messagebox.showinfo("Alerta!", "Documento(s) Salvo(s) com Sucesso!") 
-
-            return
+            self.mostrar_progresso()
                       
 # Criar janela do Tkinter
 if __name__ == "__main__":

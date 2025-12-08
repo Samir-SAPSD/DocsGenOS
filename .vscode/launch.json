@@ -1,0 +1,55 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: DocsGen (Principal)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/DocsGen/DocsGen.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONUNBUFFERED": "1"}
+        },
+        {
+            "name": "Python: DocsGen OS",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/DocsGen/DocsGen_OS.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONUNBUFFERED": "1"}
+        },
+        {
+            "name": "Python: RemoveSign",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/RemoveSign/RemoveSign.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONUNBUFFERED": "1"}
+        },
+        {
+            "name": "Python: Diagnóstico",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/diagnostico.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONUNBUFFERED": "1"}
+        },
+        {
+            "name": "Python: Configurar Ambiente",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/ambiente_config.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {"PYTHONUNBUFFERED": "1"}
+        }
+    ]
+}

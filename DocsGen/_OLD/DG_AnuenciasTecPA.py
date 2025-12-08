@@ -2,6 +2,8 @@ import os
 import tkinter as tk
 import comtypes.client
 import re
+import threading
+import pythoncom
 from plyer import notification
 from tkinter import ttk, filedialog, messagebox
 from docx import Document
@@ -40,7 +42,7 @@ class genAnuencias:
         style = Style(theme='darkly')
         self.root = root
         root = style.master
-        root.title("DocsGen - Anuências - Consultor Administrativo")
+        root.title("DocsGen - Anuências - Tecnico de Pá")
         frame = ttk.Frame(root)
         frame['padding'] = (10, 10, 10, 10)
         frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=10)
@@ -51,7 +53,7 @@ class genAnuencias:
         self.bg_photo = ImageTk.PhotoImage(self.bg_image)
         
         # Inserir a imagem no topo do formulário
-        ttk.Label(frame, image=self.bg_photo).grid(row=0, column=0, columnspan=6, pady=(0, 20))        
+        ttk.Label(frame, image=self.bg_photo).grid(row=0, column=0, columnspan=6, pady=(0, 20))
 
         #LabelFrame dentro do Frame - Dados Documento
         lblframe_dados_documentos = ttk.LabelFrame(frame, text="Dados Funcionário:", padding=10)
@@ -74,22 +76,22 @@ class genAnuencias:
         lblframe_anuencias = ttk.LabelFrame(frame, text="Anuências:", padding=10)
         lblframe_anuencias.grid(row=2, column=0, sticky="ew", padx=10, pady=5)   
 
-        ttk.Label(lblframe_anuencias, text="Consultor Admininstrativo: ").grid(row=0, column=0, padx=(0, 50), sticky=tk.W)
+        ttk.Label(lblframe_anuencias, text="Técnico Pá: ").grid(row=0, column=0, padx=(0, 50), sticky=tk.W)
 
         # Variáveis para os Checkbuttons
-        self.var_nr10_consultor_adm = tk.BooleanVar(value=False)
-        self.var_nr10_sep_consultor_adm = tk.BooleanVar(value=False)
-        self.var_nr12_consultor_adm = tk.BooleanVar(value=False)
-        self.var_nr33_consultor_adm = tk.BooleanVar(value=False)
-        self.var_nr35_consultor_adm = tk.BooleanVar(value=False)    
+        self.var_nr10_tec_pa = tk.BooleanVar(value=False)
+        self.var_nr10_sep_tec_pa = tk.BooleanVar(value=False)
+        self.var_nr12_tec_pa = tk.BooleanVar(value=False)
+        self.var_nr33_tec_pa = tk.BooleanVar(value=False)
+        self.var_nr35_tec_pa = tk.BooleanVar(value=False)    
 
         # Checkbox
-        self.ckbx_nr10_consultor_adm = ttk.Checkbutton(lblframe_anuencias, text="NR10", variable=self.var_nr10_consultor_adm)
-        self.ckbx_nr10_consultor_adm.grid(row=0, column=1, sticky=tk.W, padx=(0, 10))
-        self.ckbx_nr10_sep_consultor_adm = ttk.Checkbutton(lblframe_anuencias, text="NR10 SEP", variable=self.var_nr10_sep_consultor_adm).grid(row=0, column=2, sticky=tk.W, padx=(0, 10))
-        self.ckbx_nr12_consultor_adm = ttk.Checkbutton(lblframe_anuencias, text="NR12", variable=self.var_nr12_consultor_adm).grid(row=0, column=3, sticky=tk.W, padx=(0, 10))
-        self.ckbx_nr33_consultor_adm = ttk.Checkbutton(lblframe_anuencias, text="NR33", variable=self.var_nr33_consultor_adm).grid(row=0, column=4, sticky=tk.W, padx=(0, 10))
-        self.ckbx_nr35_consultor_adm = ttk.Checkbutton(lblframe_anuencias, text="NR35", variable=self.var_nr35_consultor_adm).grid(row=0, column=5, sticky=tk.W, padx=(0, 10))
+        self.ckbx_nr10_tec_pa = ttk.Checkbutton(lblframe_anuencias, text="NR10", variable=self.var_nr10_tec_pa)
+        self.ckbx_nr10_tec_pa.grid(row=0, column=1, sticky=tk.W, padx=(0, 10))
+        self.ckbx_nr10_sep_tec_pa = ttk.Checkbutton(lblframe_anuencias, text="NR10 SEP", variable=self.var_nr10_sep_tec_pa).grid(row=0, column=2, sticky=tk.W, padx=(0, 10))
+        self.ckbx_nr12_tec_pa = ttk.Checkbutton(lblframe_anuencias, text="NR12", variable=self.var_nr12_tec_pa).grid(row=0, column=3, sticky=tk.W, padx=(0, 10))
+        self.ckbx_nr33_tec_pa = ttk.Checkbutton(lblframe_anuencias, text="NR33", variable=self.var_nr33_tec_pa).grid(row=0, column=4, sticky=tk.W, padx=(0, 10))
+        self.ckbx_nr35_tec_pa = ttk.Checkbutton(lblframe_anuencias, text="NR35", variable=self.var_nr35_tec_pa).grid(row=0, column=5, sticky=tk.W, padx=(0, 10))
 
         #LabelFrame dentro do Frame - Opções
         lblframe_opcoes = ttk.LabelFrame(frame, text="Opções: ", padding=10)
@@ -164,8 +166,8 @@ class genAnuencias:
             # Verifica se os dígitos calculados são iguais aos do CPF informado
             return digito1 == int(cpf[9]) and digito2 == int(cpf[10])
         
-    # Funções para TECNICO de O&M
-    def nr10_consultor_adm(self, substituicoes):
+    # Funções para TECNICO de Pá
+    def nr10_tec_pa(self, substituicoes):
 
         # Receber os dados
         substituicoes =  {
@@ -177,7 +179,7 @@ class genAnuencias:
         }             
    
         # Abra o documento existente
-        doc = Document(os.path.join(caminho_base,'consultor_adm', 'nr10_consultor_adm.docx'))
+        doc = Document(os.path.join(caminho_base,'tec_pa', 'nr10_tec_pa.docx'))
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -189,8 +191,8 @@ class genAnuencias:
                 for cell in row.cells:
                     cell = self.substituir_texto_tabela(cell, substituicoes)
 
-        arq_doc_nr10 = os.path.join(caminho_base, 'consultor_adm', 'NR10_temp.docx')
-        arq_pdf_nr10 = os.path.join(self.dir_pasta_selecionada, f'NR10_{self.entr_apelido.get()}_{data_hoje}_consultor_adm.pdf')
+        arq_doc_nr10 = os.path.join(caminho_base, 'tec_pa', 'NR10_temp.docx')
+        arq_pdf_nr10 = os.path.join(self.dir_pasta_selecionada, f'NR10_{self.entr_apelido.get()}_{data_hoje}_TEC_PA.pdf')
 
         # Salve o documento editado
         doc.save(arq_doc_nr10)
@@ -202,7 +204,7 @@ class genAnuencias:
         doc.Close()
         word.Quit()  
     
-    def nr10_sep_consultor_adm(self, substituicoes):
+    def nr10_sep_tec_pa(self, substituicoes):
 
         # Receber os dados
         substituicoes =  {
@@ -214,7 +216,7 @@ class genAnuencias:
         }    
 
         # Abra o documento existente
-        doc = Document(os.path.join(caminho_base,'consultor_adm', 'nr10_sep_consultor_adm.docx'))
+        doc = Document(os.path.join(caminho_base,'tec_pa', 'nr10_sep_tec_pa.docx'))
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -226,8 +228,8 @@ class genAnuencias:
                 for cell in row.cells:
                     cell = self.substituir_texto_tabela(cell, substituicoes)
    
-        arq_doc_nr10_sep = os.path.join(caminho_base,'consultor_adm', 'NR10_SEP_temp.docx')
-        arq_pdf_nr10_sep = os.path.join(self.dir_pasta_selecionada, f'NR10_SEP_{self.entr_apelido.get()}_{data_hoje}_consultor_adm.pdf')
+        arq_doc_nr10_sep = os.path.join(caminho_base,'tec_pa', 'NR10_SEP_temp.docx')
+        arq_pdf_nr10_sep = os.path.join(self.dir_pasta_selecionada, f'NR10_SEP_{self.entr_apelido.get()}_{data_hoje}_TEC_PA.pdf')
 
         # Salve o documento editado
         doc.save(arq_doc_nr10_sep)
@@ -239,7 +241,7 @@ class genAnuencias:
         doc.Close()
         word.Quit()        
 
-    def nr12_consultor_adm(self, substituicoes):
+    def nr12_tec_pa(self, substituicoes):
 
         # Receber os dados
         substituicoes =  {
@@ -251,7 +253,7 @@ class genAnuencias:
         }    
 
         # Abra o documento existente
-        doc = Document(os.path.join(caminho_base,'consultor_adm', 'nr12_consultor_adm.docx'))
+        doc = Document(os.path.join(caminho_base,'tec_pa', 'nr12_tec_pa.docx'))
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -263,8 +265,8 @@ class genAnuencias:
                 for cell in row.cells:
                     cell = self.substituir_texto_tabela(cell, substituicoes)    
     
-        arq_doc_nr12 = os.path.join(caminho_base,'consultor_adm', 'NR12_temp.docx')
-        arq_pdf_nr12 = os.path.join(self.dir_pasta_selecionada, f'NR12_{self.entr_apelido.get()}_{data_hoje}_consultor_adm.pdf')
+        arq_doc_nr12 = os.path.join(caminho_base,'tec_pa', 'NR12_temp.docx')
+        arq_pdf_nr12 = os.path.join(self.dir_pasta_selecionada, f'NR12_{self.entr_apelido.get()}_{data_hoje}_TEC_PA.pdf')
 
         # Salve o documento editado
         doc.save(arq_doc_nr12)
@@ -276,7 +278,7 @@ class genAnuencias:
         doc.Close()
         word.Quit()        
 
-    def nr33_consultor_adm(self, substituicoes):
+    def nr33_tec_pa(self, substituicoes):
 
         # Receber os dados
         substituicoes =  {
@@ -288,7 +290,7 @@ class genAnuencias:
         }    
 
         # Abra o documento existente
-        doc = Document(os.path.join(caminho_base,'consultor_adm', 'nr33_consultor_adm.docx'))
+        doc = Document(os.path.join(caminho_base,'tec_pa', 'nr33_tec_pa.docx'))
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -300,8 +302,8 @@ class genAnuencias:
                 for cell in row.cells:
                     cell = self.substituir_texto_tabela(cell, substituicoes)   
     
-        arq_doc_nr33 = os.path.join(caminho_base,'consultor_adm', 'NR33_temp.docx')
-        arq_pdf_nr33 = os.path.join(self.dir_pasta_selecionada, f'NR33_{self.entr_apelido.get()}_{data_hoje}_consultor_adm.pdf')
+        arq_doc_nr33 = os.path.join(caminho_base,'tec_pa', 'NR33_temp.docx')
+        arq_pdf_nr33 = os.path.join(self.dir_pasta_selecionada, f'NR33_{self.entr_apelido.get()}_{data_hoje}_TEC_PA.pdf')
 
         # Salve o documento editado
         doc.save(arq_doc_nr33)
@@ -313,7 +315,7 @@ class genAnuencias:
         doc.Close()
         word.Quit()        
 
-    def nr35_consultor_adm(self, substituicoes):
+    def nr35_tec_pa(self, substituicoes):
 
         # Receber os dados
         substituicoes =  {
@@ -325,7 +327,7 @@ class genAnuencias:
         }    
 
         # Abra o documento existente
-        doc = Document(os.path.join(caminho_base,'consultor_adm', 'nr35_consultor_adm.docx'))
+        doc = Document(os.path.join(caminho_base,'tec_pa', 'nr35_tec_pa.docx'))
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -337,8 +339,8 @@ class genAnuencias:
                 for cell in row.cells:
                     cell = self.substituir_texto_tabela(cell, substituicoes)     
     
-        arq_doc_nr35 = os.path.join(caminho_base,'consultor_adm', 'NR35_temp.docx')
-        arq_pdf_nr35 = os.path.join(self.dir_pasta_selecionada, f'NR35_{self.entr_apelido.get()}_{data_hoje}_consultor_adm.pdf')
+        arq_doc_nr35 = os.path.join(caminho_base,'tec_pa', 'NR35_temp.docx')
+        arq_pdf_nr35 = os.path.join(self.dir_pasta_selecionada, f'NR35_{self.entr_apelido.get()}_{data_hoje}_TEC_PA.pdf')
 
         # Salve o documento editado
         doc.save(arq_doc_nr35)
@@ -348,7 +350,102 @@ class genAnuencias:
         doc = word.Documents.Open(os.path.abspath(arq_doc_nr35))
         doc.SaveAs(os.path.abspath(arq_pdf_nr35), FileFormat=17)
         doc.Close()
-        word.Quit()              
+        word.Quit()           
+
+    def mostrar_progresso(self):
+        # Criar uma janela de progresso
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Processando")
+        progress_window.geometry("300x150")
+        progress_window.resizable(False, False)
+        
+        # Centralizar a janela
+        window_width = 300
+        window_height = 150
+        screen_width = progress_window.winfo_screenwidth()
+        screen_height = progress_window.winfo_screenheight()
+        x_cordinate = int((screen_width/2) - (window_width/2))
+        y_cordinate = int((screen_height/2) - (window_height/2))
+        progress_window.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+
+        # Label de informação
+        lbl_info = ttk.Label(progress_window, text="Gerando documentos...\nPor favor, aguarde.", justify="center")
+        lbl_info.pack(pady=20)
+
+        # Barra de progresso indeterminada
+        progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
+        progress_bar.pack(fill='x', padx=20, pady=10)
+        progress_bar.start(10)
+
+        return progress_window
+
+    def _executar_geracao(self, progress_window):
+        try:
+            # Inicializar COM para esta thread
+            pythoncom.CoInitialize()
+            
+            var_check = 1
+            
+            # Check Tecnicos Pá
+            if self.var_nr10_tec_pa.get():                
+                self.nr10_tec_pa(self.dados)  
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR10 Gerada com Sucesso!",
+                    timeout=5
+                ))              
+
+            if self.var_nr10_sep_tec_pa.get():                
+                self.nr10_sep_tec_pa(self.dados)                
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR10 SEP Gerada com Sucesso!",
+                    timeout=5
+                ))    
+
+            if self.var_nr12_tec_pa.get():                
+                self.nr12_tec_pa(self.dados)  
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR12 Gerada com Sucesso!",
+                    timeout=5
+                ))                                     
+
+            if self.var_nr33_tec_pa.get():                
+                self.nr33_tec_pa(self.dados)               
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR33 Gerada com Sucesso!",
+                    timeout=5
+                ))    
+
+            if self.var_nr35_tec_pa.get():                
+                self.nr35_tec_pa(self.dados)
+                self.root.after(0, lambda: notification.notify(
+                    title="Aviso",
+                    message="NR35 Gerada com Sucesso!",
+                    timeout=5
+                ))                        
+
+            # Notificação final e fechamento da janela de progresso
+            self.root.after(0, lambda: [
+                progress_window.destroy(),
+                notification.notify(
+                    title="Concluído",
+                    message="O processo foi finalizado!",
+                    timeout=10
+                ),
+                messagebox.showinfo("Alerta!", "Documento(s) Salvo(s) com Sucesso!")
+            ])
+
+        except Exception as e:
+            self.root.after(0, lambda: [
+                progress_window.destroy(),
+                messagebox.showerror("Erro", f"Ocorreu um erro durante a geração: {str(e)}")
+            ])
+        finally:
+            # Desinicializar COM
+            pythoncom.CoUninitialize()
 
     def verificar_checkbuttons(self):      
 
@@ -361,75 +458,15 @@ class genAnuencias:
 
         else:
 
-            if self.validar_cpf(cpf_digitado):              
+            if self.validar_cpf(cpf_digitado):           
 
-                notification.notify(
-                    title="Aviso",
-                    message="O processo está em execução, acompanhe o(s) documento(s) gerados na pasta selecionada...",
-                    timeout=10  # Tempo que a notificação ficará visível (segundos)
-                )
-
-                var_check = 1
+                # Iniciar a janela de progresso
+                progress_window = self.mostrar_progresso()
                 
-                # Check Tecnicos O&M
-                if self.var_nr10_consultor_adm.get():                
-                    self.nr10_consultor_adm(self.dados)  
-                    notification.notify(
-                        title="Aviso",
-                        message="NR10 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )              
-
-                if self.var_nr10_sep_consultor_adm.get():                
-                    self.nr10_sep_consultor_adm(self.dados)                
-                    notification.notify(
-                        title="Aviso",
-                        message="NR10 SEP Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )    
-
-                if self.var_nr12_consultor_adm.get():                
-                    self.nr12_consultor_adm(self.dados)  
-                    notification.notify(
-                        title="Aviso",
-                        message="NR12 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )                                     
-
-                if self.var_nr33_consultor_adm.get():                
-                    self.nr33_consultor_adm(self.dados)               
-                    notification.notify(
-                        title="Aviso",
-                        message="NR33 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )    
-
-                if self.var_nr35_consultor_adm.get():                
-                    self.nr35_consultor_adm(self.dados)
-                    notification.notify(
-                        title="Aviso",
-                        message="NR35 Gerada com Sucesso!",
-                        timeout=5  # Tempo que a notificação ficará visível (segundos)
-                    )                        
-
-                # IF para sair da interção do LOOP
-                if var_check == 2:
-                    return
-                
-                else:
-                    
-                    # Notificação final
-                    notification.notify(
-                        title="Concluído",
-                        message="O processo foi finalizado!",
-                        timeout=10
-                    )
-
-                    messagebox.showinfo("Alerta!", "Documento(s) Salvo(s) com Sucesso!") 
-
-                    #self.lbl_avisoGeracao.grid_remove()
-
-                    return
+                # Iniciar a thread de geração
+                thread = threading.Thread(target=self._executar_geracao, args=(progress_window,))
+                thread.daemon = True
+                thread.start()
                 
             else:
                 messagebox.showinfo("Alerta!", "CPF Inválido!") 

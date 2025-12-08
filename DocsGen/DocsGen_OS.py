@@ -11,6 +11,8 @@ from ttkbootstrap import Style
 from PIL import Image, ImageTk
 from datetime import datetime
 import tempfile
+import threading
+import pythoncom
 
 # Seta a linguagem para Portugues do brasil.
 locale.setlocale(locale.LC_TIME, "Portuguese_Brazil.1252")
@@ -358,7 +360,7 @@ class genOrdenServico:
         elif gheSelecionado == "03":
                 self.cbbx_funcao['values'] = [
                     "SUPERVISOR DE INSTALACOES",
-                    "TECNICO DE SERVICOS ESPECIAIS",
+                    "TECNICO DE SERVIÇOS ESPECIAIS",
                     "TECNICO LIDER DE ELETRICA",
                     "TECNICO O&M ESPECIALISTA",
                     "TECNICO O&M JR",
@@ -595,20 +597,17 @@ class genOrdenServico:
         # Caminho do modelo e verificação
         modelo_path = os.path.join(caminho_base,'osst_mod', documentoModelo)
         if not os.path.exists(modelo_path):
-            messagebox.showerror("Erro", f"Modelo não encontrado:\n{modelo_path}")
-            return
+            raise Exception(f"Modelo não encontrado:\n{modelo_path}")
 
         # Abra o documento existente com tratamento de erro
         try:
             doc = Document(modelo_path)
         except Exception as e:
-            messagebox.showerror("Erro", f"Falha ao abrir o modelo:\n{e}")
-            return
+            raise Exception(f"Falha ao abrir o modelo:\n{e}")
 
         # Verifica se o documento tem tabelas esperadas antes de acessar índices
         if len(doc.tables) < 5:
-            messagebox.showerror("Erro", "Modelo inválido: número insuficiente de tabelas no documento.")
-            return
+            raise Exception("Modelo inválido: número insuficiente de tabelas no documento.")
 
         # Substitua as palavras específicas nos parágrafos
         for paragraph in doc.paragraphs:
@@ -660,27 +659,59 @@ class genOrdenServico:
             messagebox.showinfo("Alerta!", "Selecione a pasta para salvar o(s) documento(s)!") 
         else:
             if self.validar_cpf(cpf_digitado):
-
-                # Notificação Inicio
-                notification.notify(
-                    title="Aviso",
-                    message="O processo está em execução, acompanhe o(s) documento(s) gerados na pasta selecionada...",
-                    timeout=10  # Tempo que a notificação ficará visível (segundos)
-                )
-
-                self.gerarOS(self.dados)
-
-                # Notificação Finalização
-                notification.notify(
-                    title="Concluído",
-                    message="O processo foi finalizado!",
-                    timeout=10
-                )
-                messagebox.showinfo("Alerta!", "Arquivos Salvos com Sucesso!") 
-                return
-            
+                self.mostrar_progresso()
             else:
                 messagebox.showinfo("Alerta!", "CPF Inválido!") 
+        
+    def mostrar_progresso(self):
+        """Exibe barra de progresso e inicia a geração em thread"""
+        self.janela_progress = tk.Toplevel(self.root)
+        self.janela_progress.title("Gerando OS...")
+        self.janela_progress.geometry("400x150")
+        self.janela_progress.resizable(False, False)
+        self.janela_progress.transient(self.root)
+        self.janela_progress.grab_set()
+        
+        # Centralizar
+        self.janela_progress.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (self.janela_progress.winfo_width() // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (self.janela_progress.winfo_height() // 2)
+        self.janela_progress.geometry(f"+{x}+{y}")
+        
+        ttk.Label(self.janela_progress, text="Gerando Ordem de Serviço...\nPor favor, aguarde...", justify=tk.CENTER).pack(pady=20)
+        
+        self.progress = ttk.Progressbar(self.janela_progress, mode='indeterminate', length=350)
+        self.progress.pack(pady=10, padx=20)
+        self.progress.start()
+        
+        # Iniciar thread
+        threading.Thread(target=self._executar_geracao, daemon=True).start()
+
+    def _executar_geracao(self):
+        try:
+            pythoncom.CoInitialize()
+            # Notificação Inicio
+            notification.notify(
+                title="Aviso",
+                message="O processo está em execução...",
+                timeout=5
+            )
+
+            self.gerarOS(self.dados)
+
+            # Notificação Finalização
+            notification.notify(
+                title="Concluído",
+                message="O processo foi finalizado!",
+                timeout=5
+            )
+            self.root.after(0, lambda: messagebox.showinfo("Sucesso", "Arquivos Salvos com Sucesso!"))
+            
+        except Exception as e:
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao gerar OS: {str(e)}"))
+        
+        finally:
+            self.root.after(0, self.janela_progress.destroy)
         
 # Criar janela do Tkinter
 if __name__ == "__main__":

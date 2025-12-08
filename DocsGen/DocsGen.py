@@ -3,7 +3,8 @@ import ttkbootstrap as tb
 import subprocess
 import os
 import sys
-from tkinter import ttk
+import threading
+from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 
 # Diretório base do script
@@ -50,15 +51,15 @@ class App:
         menubar = tk.Menu(self.root)
 
         menu_anuencias = tk.Menu(menubar, tearoff=0)
-        #menu_anuencias.add_command(label="Gerar Nova", command=self.abrir_anuencias)
-        menu_anuencias.add_command(label="Tecnico de O&M", command=self.anuencias_tec_om)
-        menu_anuencias.add_command(label="Supervisor de O&M", command=self.anuencias_sup_om)
-        menu_anuencias.add_command(label="Tecnico de Pá", command=self.anuencias_tec_pa)
-        menu_anuencias.add_command(label="Tecnico de Pá Especialista", command=self.anuencias_tec_pa_esp)
-        menu_anuencias.add_command(label="Tecnico de Seg. Trabalho", command=self.anuencias_tec_seg)
-        menu_anuencias.add_command(label="Tecnico de Serviços Especiais Operacional", command=self.anuencias_tec_serv_esp_op)
-        menu_anuencias.add_command(label="Consultor Administrativo", command=self.anuencias_consultor_adm)
-        menu_anuencias.add_command(label="Almoxarife", command=self.anuencias_almoxarife)
+        menu_anuencias.add_command(label="Gerar Nova", command=self.abrir_anuencias)
+        #menu_anuencias.add_command(label="Tecnico de O&M", command=self.anuencias_tec_om)
+        #menu_anuencias.add_command(label="Supervisor de O&M", command=self.anuencias_sup_om)
+        #menu_anuencias.add_command(label="Tecnico de Pá", command=self.anuencias_tec_pa)
+        #menu_anuencias.add_command(label="Tecnico de Pá Especialista", command=self.anuencias_tec_pa_esp)
+        #menu_anuencias.add_command(label="Tecnico de Seg. Trabalho", command=self.anuencias_tec_seg)
+        #menu_anuencias.add_command(label="Tecnico de Serviços Especiais Operacional", command=self.anuencias_tec_serv_esp_op)
+        #menu_anuencias.add_command(label="Consultor Administrativo", command=self.anuencias_consultor_adm)
+        #menu_anuencias.add_command(label="Almoxarife", command=self.anuencias_almoxarife)
 
         menu_os = tk.Menu(menubar, tearoff=0)
         #menu_os.add_command(label="Gerar Nova", command=self.abrir_os)
@@ -82,48 +83,170 @@ class App:
 
         self.root.config(menu=menubar)
 
+    def _executar_script_com_progress(self, caminho_script, nome_script):
+        """Executa script com barra de progresso em thread separada"""
+        janela_progress = tk.Toplevel(self.root)
+        janela_progress.title(f"Carregando {nome_script}...")
+        janela_progress.geometry("400x150")
+        janela_progress.resizable(False, False)
+        janela_progress.transient(self.root)
+        janela_progress.grab_set()
+        
+        # Centralizar janela de progresso
+        janela_progress.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (janela_progress.winfo_width() // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (janela_progress.winfo_height() // 2)
+        janela_progress.geometry(f"+{x}+{y}")
+        
+        # Label informativo
+        label = ttk.Label(janela_progress, text=f"Iniciando {nome_script}...\nPor favor, aguarde...", justify=tk.CENTER)
+        label.pack(pady=20)
+        
+        # Barra de progresso
+        progress = ttk.Progressbar(janela_progress, mode='indeterminate', length=350)
+        progress.pack(pady=10, padx=20)
+        progress.start()
+        
+        # Label de status
+        status_label = ttk.Label(janela_progress, text="Carregando...", foreground="gray")
+        status_label.pack(pady=5)
+        
+        def executar():
+            try:
+                # Verificar se arquivo existe
+                if not os.path.exists(caminho_script):
+                    self.root.after(0, lambda: messagebox.showerror(
+                        "Erro",
+                        f"Arquivo não encontrado:\n{caminho_script}"
+                    ))
+                    janela_progress.destroy()
+                    return
+                
+                # Executar script com stdout e stderr capturados
+                processo = subprocess.Popen(
+                    [PYTHONW, caminho_script],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                try:
+                    # Aguardar 3 segundos para verificar se há erro na inicialização
+                    stdout, stderr = processo.communicate(timeout=3)
+                    
+                    # Se chegou aqui, o processo terminou (erro ou execução rápida)
+                    if processo.returncode == 0:
+                        status_label.config(text="Concluído.", foreground="green")
+                        self.root.after(500, janela_progress.destroy)
+                    else:
+                        erro_msg = stderr if stderr else f"Código de erro: {processo.returncode}"
+                        self.root.after(0, lambda: messagebox.showerror(
+                            "Erro ao executar",
+                            f"Erro ao executar {nome_script}:\n\n{erro_msg[:500]}"
+                        ))
+                        janela_progress.destroy()
+                        
+                except subprocess.TimeoutExpired:
+                    # Timeout significa que o programa continua rodando (sucesso para GUI)
+                    status_label.config(text="Programa iniciado!", foreground="green")
+                    self.root.after(500, janela_progress.destroy)
+                    # O processo continua rodando em segundo plano
+                    
+            except subprocess.TimeoutExpired:
+                processo.kill()
+                self.root.after(0, lambda: messagebox.showerror(
+                    "Timeout",
+                    f"O script {nome_script} demorou muito tempo para responder."
+                ))
+                janela_progress.destroy()
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror(
+                    "Erro",
+                    f"Erro ao executar {nome_script}:\n\n{str(e)}"
+                ))
+                janela_progress.destroy()
+        
+        # Executar em thread separada para não travar a interface
+        thread = threading.Thread(target=executar, daemon=True)
+        thread.start()
+
     def abrir_anuencias(self):
-        print("Abrir tela de Anuências")
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_Anuencias.py")]) 
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DocsGen_Anuencias.py"),
+            "Anuências"
+        )
 
     def anuencias_tec_om(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecOM.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecOM.py"),
+            "Anuências - Técnico O&M"
+        )
 
     def anuencias_sup_om(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasSupOM.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasSupOM.py"),
+            "Anuências - Supervisor O&M"
+        )
 
     def anuencias_tec_pa(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecPA.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecPA.py"),
+            "Anuências - Técnico Pá"
+        )
 
     def anuencias_tec_pa_esp(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecPAESP.py")])            
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecPAESP.py"),
+            "Anuências - Técnico Pá Especialista"
+        )
 
     def anuencias_tec_seg(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecSEG.py")])             
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecSEG.py"),
+            "Anuências - Técnico Segurança"
+        )
 
     def anuencias_tec_serv_esp_op(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecSERVESPCIOP.py")])      
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecSERVESPCIOP.py"),
+            "Anuências - Técnico Serviços Especiais"
+        )
 
     def anuencias_consultor_adm(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasTecCONSULTORADM.py")])                   
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasTecCONSULTORADM.py"),
+            "Anuências - Consultor Administrativo"
+        )
 
     def anuencias_almoxarife(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_AnuenciasAlmox.py")])  
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_AnuenciasAlmox.py"),
+            "Anuências - Almoxarife"
+        )
 
     def gerador_os(self):
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_OS.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DocsGen_OS.py"),
+            "Gerador de Ordens de Serviço"
+        )
 
     def abrir_sit(self):
-        print("Abrir tela de SIT")
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DocsGen_SIT.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DocsGen_SIT.py"),
+            "Gerador SIT"
+        )
 
     def abrir_lift(self):
-        print("Abrir tela de Lift User")
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_LiftUser.py")])        
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_LiftUser.py"),
+            "Lift User"
+        )
 
     def abrir_assinaturas(self):
-        print("Abrir tela de Assinaturas")
-        subprocess.Popen([PYTHONW, os.path.join(BASE_DIR, "DG_RemoveSign.py")])
+        self._executar_script_com_progress(
+            os.path.join(BASE_DIR, "DG_RemoveSign.py"),
+            "Remover Assinaturas"
+        )
 
 if __name__ == "__main__":
     root = tk.Tk()
