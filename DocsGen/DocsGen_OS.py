@@ -3,6 +3,7 @@ import tkinter as tk
 import comtypes.client
 import re
 import locale
+import json
 from plyer import notification
 from tkinter import ttk, filedialog, messagebox
 from docx import Document
@@ -253,6 +254,19 @@ class genOrdenServico:
         # Defina os dados
         self.dados = {}   
 
+        # Carregar GHEs do JSON
+        self.ghe_data = self.carregar_ghe_json()
+
+    def carregar_ghe_json(self):
+        arquivo = os.path.join(caminho_base, 'ghe_config.json')
+        if os.path.exists(arquivo):
+            try:
+                with open(arquivo, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Erro ao ler ghe_config.json: {e}")
+        return {}
+
     def selecionar_pasta(self):
         pasta_selecionada = filedialog.askdirectory()
         if pasta_selecionada:
@@ -313,101 +327,10 @@ class genOrdenServico:
 
     def update_funcao(self, event):
         gheSelecionado = self.cbbx_ghe.get()
-        if gheSelecionado == "01":
-                self.cbbx_funcao['values'] = [
-                    "ANALISTA DE CUSTO",
-                    "ANALISTA DE OPERACOES",
-                    "COMPRADOR SR",
-                    "COORDENADOR DE FROTA",
-                    "COORDENADOR DE QUALIDADE",
-                    "ENGENHEIRO DE ATENDIMENTO AO CLIENTE",
-                    "ENGENHEIRO DE TECNOLOGIA",
-                    "LIDER DE PROJETOS",
-                    "PLANEJADOR",
-                    "PROGRAMADOR",
-                    "SUPERVISOR DE MATERIAIS",
-                    "SUPERVISOR DE PLANEJAMENTO" 
-                    ]
-        elif gheSelecionado == "02":
-                self.cbbx_funcao['values'] = [
-                    "ANALISTA DE QUALIDADE",
-                    "ANALISTA DE TREINAMENTO", 
-                    "COORDENADOR DE OPERACOES", 
-                    "DIRETOR (A) DE SSMA LATAM", 
-                    "ENGENHEIRO DE AUTOMACAO", 
-                    "ENGENHEIRO DE CONTROLE DE QUALIDADE SR", 
-                    "ENGENHEIRO DE PA EOLICA", 
-                    "ENGENHEIRO DE PROJETOS", 
-                    "ENGENHEIRO DE QUALIDADE", 
-                    "ENGENHEIRO DE QUALIDADE SR", 
-                    "ENGENHEIRO DE SEGURANÇA DO TRABALHO", 
-                    "ENGENHEIRO ELETRICISTA", 
-                    "ENGENHEIRO ELETRICO", 
-                    "ENGENHEIRO EM GESTÃO DE PROJETOS", 
-                    "ENGENHEIRO MECANICO", 
-                    "ENGENHEIRO SCADA", 
-                    "ESPECIALISTA DE QUALIDADE", 
-                    "GERENTE DE CONTROLE DE PROJETOS", 
-                    "GERENTE DE PROJETOS", 
-                    "GERENTE DE PROJETOS E SERVIÇOES DE MANUTENÇÃO", 
-                    "GERENTE DE QUALIDADE EXC E PROJETOS", 
-                    "GERENTE DE SEGURANCA DO TRABALHO", 
-                    "GERENTE SITE", 
-                    "SUPERVISOR O&M", 
-                    "TECNICO DE SEGURANCA DO TRABALHO", 
-                    "TECNICO DE SEGURANCA DO TRABALHO SR"
-                ]
-        elif gheSelecionado == "03":
-                self.cbbx_funcao['values'] = [
-                    "SUPERVISOR DE INSTALACOES",
-                    "TECNICO DE SERVIÇOS ESPECIAIS",
-                    "TECNICO LIDER DE ELETRICA",
-                    "TECNICO O&M ESPECIALISTA",
-                    "TECNICO O&M JR",
-                    "TECNICO O&M LIDER",
-                    "TECNICO O&M PL",
-                    "TECNICO O&M SR",
-                    "TECNICO DE PA EOLICA ESPECIALISTA",
-                    "TECNICO DE PA EOLICA JR",
-                    "TECNICO DE PA EOLICA LIDER",
-                    "TECNICO DE PA EOLICA PL",
-                    "TECNICO DE PA EOLICA SR",                    
-                ]
-        elif gheSelecionado == "04":
-                self.cbbx_funcao['values'] = [
-                    "ANALISTA DE DADOS",
-                    "CEO DIRETOR GERAL",
-                    "DIRETOR DE CONSTRUCAO",
-                    "DIRETOR DE ENGENHARIA",
-                    "DIRETOR DE QUALIDADE LATAM",
-                    "DIRETOR DE OPERACOES",
-                    "DIRETOR DE OPERACOES E MANUTENCAO",
-                    "DIRETOR DE SEGURANCA AMERICA LATINA",
-                    "DIRETOR FINANCEIRO",
-                    "DIRETOR FINANCEIRO CONTABIL",
-                    "DIRETOR REGIONAL DE MANUFATURA",
-                    "GERENTE DE ATENDIMENTO AO CLIENTE",
-                    "GERENTE DE ENGENHARIA",
-                    "GERENTE DE MELHORIA CONTINUA",
-                    "GERENTE DE OPERACOES",
-                    "GERENTE DE OPERACOES E MANUTENÇÃO",
-                    "GERENTE DE RECURSOS HUMANOS",
-                    "GERENTE DE SUPORTE DE OPERACAO DE SERVICO",
-                    "GERENTE DE TREINAMENTO",
-                    "VICE PRESIDENTE DE CONSTRUCAO",
-                    "VICE PRESIDENTE DE FINANCAS",
-                    "VICE PRESIDENTE DE OPERACOES",
-                    "VICE PRESIDENTE REGIONAL CTO",
-                    "VICE PRESIDENTE, PEOPLE & CULTURE, LATAM"
-                ]     
-        elif gheSelecionado == "05":
-                self.cbbx_funcao['values'] = [
-                    "ALMOXARIFE",
-                    "ALMOXARIFE JR",
-                    "ALMOXARIFE PL",
-                    "ALMOXARIFE SR",
-                    "SUPERVISOR O&M"
-                ]
+        if gheSelecionado in self.ghe_data:
+            self.cbbx_funcao['values'] = self.ghe_data[gheSelecionado]
+        else:
+            self.cbbx_funcao['values'] = []
 
     def atividade_funcao(self):
         # Abrir o arquivo para leitura

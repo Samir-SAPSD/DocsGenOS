@@ -6,6 +6,7 @@ import traceback
 import uuid
 import time
 import glob
+import json
 from plyer import notification
 from tkinter import ttk, filedialog, messagebox
 from docx import Document
@@ -31,49 +32,8 @@ meses = {
     9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 }
 
-# Configuração dos Cargos
-CONFIG_CARGOS = {
-    "Técnico O&M": {
-        "pasta": "tec_oem",
-        "sufixo": "_TEC_OM",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Supervisor O&M": {
-        "pasta": "sup_oem",
-        "sufixo": "_sup_OM",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Técnico PA": {
-        "pasta": "tec_pa",
-        "sufixo": "_TEC_PA",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Almoxarife": {
-        "pasta": "almox",
-        "sufixo": "_almox",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33"]
-    },
-    "Técnico PA Especializado": {
-        "pasta": "tec_pa_esp",
-        "sufixo": "_TEC_PA_ESP",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Técnico Segurança": {
-        "pasta": "tec_seg",
-        "sufixo": "_TEC_SEG",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Consultor Administrativo": {
-        "pasta": "consultor_adm",
-        "sufixo": "_CONSULTOR_ADM",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    },
-    "Técnico Serv. Esp. Op.": {
-        "pasta": "tec_serv_esp_op",
-        "sufixo": "_TEC_SERV_ESP_OP",
-        "docs": ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
-    }
-}
+# Lista de documentos disponíveis (Unificada)
+DOCS_DISPONIVEIS = ["NR10", "NR10 SEP", "NR12", "NR33", "NR35"]
 
 class genAnuencias:
     def __init__(self, root):
@@ -111,13 +71,22 @@ class genAnuencias:
         self.entr_apelido = ttk.Entry(lblframe_dados, width=15)
         self.entr_apelido.grid(row=1, column=3, sticky=tk.W, pady=5)
 
+        ttk.Label(lblframe_dados, text="HSE Responsável: ").grid(row=2, column=0, sticky=tk.W)
+        self.cbbx_hse = ttk.Combobox(lblframe_dados, values=[], width=30)
+        self.cbbx_hse.grid(row=2, column=1, sticky=tk.W, pady=5)
+
         # Seleção de Cargo
         lblframe_cargo = ttk.LabelFrame(frame, text="Seleção de Cargo:", padding=10)
         lblframe_cargo.grid(row=2, column=0, columnspan=6, sticky="ew", padx=10, pady=5)
         
-        ttk.Label(lblframe_cargo, text="Cargo: ").grid(row=0, column=0, sticky=tk.W)
-        self.combo_cargo = ttk.Combobox(lblframe_cargo, values=list(CONFIG_CARGOS.keys()), state="readonly", width=40)
-        self.combo_cargo.grid(row=0, column=1, sticky=tk.W, padx=10)
+        ttk.Label(lblframe_cargo, text="GHE: ").grid(row=0, column=0, sticky=tk.W)
+        self.cbbx_ghe = ttk.Combobox(lblframe_cargo, values=["01", "02", "03", "04", "05"], width=10, state="readonly")
+        self.cbbx_ghe.grid(row=0, column=1, sticky=tk.W, padx=10)
+        self.cbbx_ghe.bind("<<ComboboxSelected>>", self.atualizar_cargos_por_ghe)
+
+        ttk.Label(lblframe_cargo, text="Cargo: ").grid(row=0, column=2, sticky=tk.W)
+        self.combo_cargo = ttk.Combobox(lblframe_cargo, values=[], state="readonly", width=40)
+        self.combo_cargo.grid(row=0, column=3, sticky=tk.W, padx=10)
         self.combo_cargo.bind("<<ComboboxSelected>>", self.atualizar_opcoes_cargo)
 
         # Frame para Checkboxes (Dinâmico)
@@ -142,20 +111,88 @@ class genAnuencias:
 
         self.dados = {}
 
+        # Carregar HSEs
+        self.lista_hses = self.carregar_hses()
+        self.cbbx_hse['values'] = list(self.lista_hses.keys())
+
+        # Carregar GHEs do JSON
+        self.ghe_data = self.carregar_ghe_json()
+
+    def carregar_ghe_json(self):
+        arquivo = os.path.join(caminho_base, 'ghe_config.json')
+        if os.path.exists(arquivo):
+            try:
+                with open(arquivo, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Erro ao ler ghe_config.json: {e}")
+        return {}
+
+    def carregar_hses(self):
+        hses = {}
+        arquivo = os.path.join(caminho_base, 'listaHSE.txt')
+        if os.path.exists(arquivo):
+            try:
+                with open(arquivo, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        parts = line.strip().split(';')
+                        if len(parts) >= 3:
+                            # ROLE;NAME;REGISTRATION
+                            role = parts[0].strip()
+                            name = parts[1].strip()
+                            reg = parts[2].strip()
+                            
+                            # Mapeamento de função se necessário
+                            funcao = "Técnico(a) de Segurança do Trabalho" if role.upper() == "HSE" else role
+                            
+                            hses[name] = {
+                                "nome": name,
+                                "registro": reg,
+                                "funcao": funcao
+                            }
+            except Exception as e:
+                print(f"Erro ao ler listaHSE.txt: {e}")
+        return hses
+        
+    def atualizar_cargos_por_ghe(self, event):
+        gheSelecionado = self.cbbx_ghe.get()
+        if gheSelecionado in self.ghe_data:
+            self.combo_cargo['values'] = self.ghe_data[gheSelecionado]
+        else:
+            self.combo_cargo['values'] = []
+        
+        self.combo_cargo.set('') # Limpar seleção anterior
+        # Limpar checkboxes de anuencias
+        for widget in self.lblframe_anuencias.winfo_children():
+            widget.destroy()
+        self.vars_docs.clear()
+
+    def carregar_cargos_do_arquivo(self):
+        cargos = []
+        arquivo = os.path.join(caminho_base, 'listaDescFuncoes.txt')
+        if os.path.exists(arquivo):
+            try:
+                with open(arquivo, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        parts = line.strip().split(';')
+                        if len(parts) > 1:
+                            cargos.append(parts[1].strip())
+            except Exception as e:
+                print(f"Erro ao ler arquivo de funções: {e}")
+        return sorted(list(set(cargos))) # Remove duplicatas e ordena
+
     def atualizar_opcoes_cargo(self, event):
         # Limpar checkboxes antigos
         for widget in self.lblframe_anuencias.winfo_children():
             widget.destroy()
         self.vars_docs.clear()
-
-        cargo = self.combo_cargo.get()
-        if cargo in CONFIG_CARGOS:
-            docs = CONFIG_CARGOS[cargo]["docs"]
-            for i, doc in enumerate(docs):
-                var = tk.BooleanVar()
-                chk = ttk.Checkbutton(self.lblframe_anuencias, text=doc, variable=var)
-                chk.grid(row=0, column=i, padx=10, sticky=tk.W)
-                self.vars_docs[doc] = var
+        
+        # Exibir todas as opções disponíveis
+        for i, doc in enumerate(DOCS_DISPONIVEIS):
+            var = tk.BooleanVar()
+            chk = ttk.Checkbutton(self.lblframe_anuencias, text=doc, variable=var)
+            chk.grid(row=0, column=i, padx=10, sticky=tk.W)
+            self.vars_docs[doc] = var
 
     def selecionar_pasta(self):
         pasta_selecionada = filedialog.askdirectory()
@@ -257,46 +294,60 @@ class genAnuencias:
             pass
 
     def _executar_geracao(self):
-        pasta = ""
+        pasta_templates = "templates"
         try:
             pythoncom.CoInitialize()
-            cargo = self.combo_cargo.get()
-            config = CONFIG_CARGOS.get(cargo)
+            cargo_selecionado = self.combo_cargo.get().upper()
             
-            if not config:
-                return
-
-            pasta = config["pasta"]
-            sufixo = config["sufixo"]
+            # Gerar sufixo baseado no nome do cargo (sanitizado)
+            # Ex: "Técnico O&M" -> "_TECNICO_O_M"
+            sufixo = "_" + re.sub(r'[^a-zA-Z0-9]', '_', cargo_selecionado).upper()
             
             # Limpar temporários antigos antes de começar
-            self.limpar_temporarios(pasta)
+            self.limpar_temporarios(pasta_templates)
             
             # Preparar dados para substituição
-            nome_func = self.entr_funcionario.get()
-            cpf_func = self.entr_CPF.get()
+            nome_func = self.entr_funcionario.get().upper()
+            cpf_func = self.entr_CPF.get().upper()
             
             # Garantir que não sejam None
             if nome_func is None: nome_func = ""
             if cpf_func is None: cpf_func = ""
 
+            # Lógica HSE
+            hse_selecionado = self.cbbx_hse.get().upper()
+            nomeHSE = ""
+            registroHSE = ""
+            funcaoHSE = ""
+
+            if hse_selecionado in self.lista_hses:
+                dados_hse = self.lista_hses[hse_selecionado]
+                nomeHSE = dados_hse["nome"]
+                registroHSE = dados_hse["registro"]
+                funcaoHSE = dados_hse["funcao"]
+            elif hse_selecionado: # Caso tenha digitado manualmente ou algo assim (fallback simples)
+                 nomeHSE = hse_selecionado
+
             self.dados = {
                 'NOMEFUNCIONARIO': str(nome_func),
+                'FUNCAOFUNCIONARIO': str(cargo_selecionado),
                 'DIAANUENCIA': datetime.today().strftime("%d"),
                 'MESANUENCIA': str(meses.get(datetime.today().month, datetime.today().strftime("%B"))),
                 'ANOANUENCIA': datetime.today().strftime("%Y"),
-                'CPFFUNCIONARIO': str(cpf_func)
+                'CPFFUNCIONARIO': str(cpf_func),
+                'NOMEHSE': nomeHSE,
+                'REGISTROHSE': registroHSE,
+                'FUNCAOHSE': funcaoHSE
             }
 
             for doc_nome, var in self.vars_docs.items():
                 if var.get():
                     # Determinar nome do template
-                    # Ex: NR10 -> nr10_pasta.docx
-                    # Ex: NR10 SEP -> nr10_sep_pasta.docx
-                    prefixo = doc_nome.lower().replace(" ", "_") # nr10, nr10_sep
-                    template_name = f"{prefixo}_{pasta}.docx"
+                    # Ex: NR10 -> NR10.docx
+                    # Ex: NR10 SEP -> NR10_SEP.docx
+                    nome_arquivo_template = doc_nome.replace(" ", "_") + ".docx"
                     
-                    self.gerar_documento(template_name, pasta, sufixo, doc_nome)
+                    self.gerar_documento(nome_arquivo_template, pasta_templates, sufixo, doc_nome)
                     
                     self.root.after(0, lambda d=doc_nome: notification.notify(
                         title="Aviso",
@@ -318,8 +369,7 @@ class genAnuencias:
                 messagebox.showerror("Erro", f"Ocorreu um erro:\n{erro_msg}")
             ])
         finally:
-            if pasta:
-                self.limpar_temporarios(pasta)
+            self.limpar_temporarios(pasta_templates)
             pythoncom.CoUninitialize()
 
     def gerar_documento(self, template_name, pasta, sufixo, doc_nome):
@@ -342,9 +392,9 @@ class genAnuencias:
         prefixo_saida = doc_nome.replace(" ", "_") # NR10, NR10_SEP
         
         # Validar caracteres inválidos no apelido
-        apelido = self.entr_apelido.get()
+        apelido = self.entr_apelido.get().upper()
         if apelido is None: apelido = ""
-        apelido = re.sub(r'[<>:"/\\|?*]', '', apelido) # Remove caracteres inválidos
+        apelido = re.sub(r'[<>:"/\\|?*]', '', apelido) # Removes caracteres inválidos
         
         nome_arquivo = f"{prefixo_saida}_{apelido}_{data_hoje}{sufixo}.pdf"
         
