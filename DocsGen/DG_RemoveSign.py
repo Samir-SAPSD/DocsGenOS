@@ -21,7 +21,7 @@ class PDFConverterApp:
         self.dir_pasta_selecionada = ""
 
         # Carregar a imagem
-        self.bg_image = Image.open(r"C:\PyProjects\DocsGen\bkg_removesign.png")
+        self.bg_image = Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "bkg_removesign.png"))
         print(os.path.abspath(__file__))
         self.bg_photo = ImageTk.PhotoImage(self.bg_image)
         

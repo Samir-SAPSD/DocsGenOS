@@ -33,7 +33,7 @@ class genSIT:
         self.dir_pasta_selecionada = ""
 
         # Carregar a imagem
-        self.bg_image = Image.open(r"C:\PyProjects\DocsGen\bkg_sit.png")
+        self.bg_image = Image.open(os.path.join(caminho_base, "bkg_sit.png"))
         self.bg_photo = ImageTk.PhotoImage(self.bg_image)
         
         # Inserir a imagem no topo do formulário

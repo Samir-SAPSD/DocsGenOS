@@ -49,8 +49,6 @@ def instalar_bibliotecas(requirements_file):
 def criar_atalho(nome_atalho, caminho_script, pasta_destino, python_info, icone=None, usar_console=False):
     """Cria um atalho .lnk para um script Python no Windows."""
     try:
-        import win32com.client
-        
         # Caminho completo do atalho
         atalho_path = os.path.join(pasta_destino, f"{nome_atalho}.lnk")
         
@@ -60,27 +58,36 @@ def criar_atalho(nome_atalho, caminho_script, pasta_destino, python_info, icone=
         else:
             python_path = python_info['pythonw']  # pythonw.exe (sem console)
         
-        # Criar o atalho usando COM
-        shell = win32com.client.Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(atalho_path)
-        shortcut.Targetpath = python_path
-        shortcut.Arguments = f'"{caminho_script}"'
-        shortcut.WorkingDirectory = os.path.dirname(caminho_script)
-        shortcut.Description = f"{nome_atalho} (Python {python_info['versao']})"
-        
-        if icone and os.path.exists(icone):
-            shortcut.IconLocation = icone
-        
-        shortcut.save()
+        # PowerShell/WScript.Shell evita depender do pywin32, que falha ao ser importado logo após a instalação
+        ps_script = (
+            "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:DG_LNK);"
+            "$s.TargetPath = $env:DG_TARGET;"
+            "$s.Arguments = '\"' + $env:DG_ARGS + '\"';"
+            "$s.WorkingDirectory = $env:DG_WORKDIR;"
+            "$s.Description = $env:DG_DESC;"
+            "if ($env:DG_ICON) { $s.IconLocation = $env:DG_ICON };"
+            "$s.Save()"
+        )
+        env = os.environ.copy()
+        env.update({
+            'DG_LNK': atalho_path,
+            'DG_TARGET': python_path,
+            'DG_ARGS': caminho_script,
+            'DG_WORKDIR': os.path.dirname(caminho_script),
+            'DG_DESC': f"{nome_atalho} (Python {python_info['versao']})",
+            'DG_ICON': icone if icone and os.path.exists(icone) else '',
+        })
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-NonInteractive', '-Command', ps_script],
+            capture_output=True, text=True, env=env
+        )
+        if result.returncode != 0:
+            print(f"Erro ao criar atalho '{nome_atalho}': {result.stderr.strip()}")
+            return False
         print(f"Atalho '{nome_atalho}' criado em: {atalho_path}")
         print(f"  -> Usando: {python_path}")
         return True
         
-    except ImportError:
-        print("Erro: pywin32 não está instalado. Instalando...")
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'pywin32'], capture_output=True)
-        print("pywin32 instalado. Execute o script novamente para criar os atalhos.")
-        return False
     except Exception as e:
         print(f"Erro ao criar atalho '{nome_atalho}': {e}")
         return False
@@ -118,18 +125,6 @@ requirements_file = os.path.join(base_dir, 'requirements.txt')
 # Chame a função para instalar as bibliotecas
 print("\n--- Instalando Bibliotecas ---")
 instalar_bibliotecas(requirements_file)
-
-# Instalar pywin32 para criação de atalhos
-print("\nInstalando/atualizando 'pywin32' para criação de atalhos...")
-result = subprocess.run(
-    [sys.executable, '-m', 'pip', 'install', 'pywin32'],
-    capture_output=True,
-    text=True
-)
-if result.returncode == 0:
-    print("pywin32 instalado/atualizado com sucesso.")
-else:
-    print(f"Erro ao instalar pywin32: {result.stderr}")
 
 # Criar os atalhos com os caminhos corretos do Python
 criar_atalhos(python_info)

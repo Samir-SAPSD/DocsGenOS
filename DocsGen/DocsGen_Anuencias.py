@@ -49,7 +49,7 @@ class genAnuencias:
 
         # Carregar a imagem
         try:
-            self.bg_image = Image.open(r"C:\PyProjects\DocsGen\bkg_anuencias.png")
+            self.bg_image = Image.open(os.path.join(caminho_base, "bkg_anuencias.png"))
             self.bg_photo = ImageTk.PhotoImage(self.bg_image)
             ttk.Label(frame, image=self.bg_photo).grid(row=0, column=0, columnspan=6, pady=(0, 20))
         except Exception:
