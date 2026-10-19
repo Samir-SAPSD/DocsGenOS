@@ -80,7 +80,7 @@ class genAnuencias:
         lblframe_cargo.grid(row=2, column=0, columnspan=6, sticky="ew", padx=10, pady=5)
         
         ttk.Label(lblframe_cargo, text="GHE: ").grid(row=0, column=0, sticky=tk.W)
-        self.cbbx_ghe = ttk.Combobox(lblframe_cargo, values=["01", "02", "03", "04", "05"], width=10, state="readonly")
+        self.cbbx_ghe = ttk.Combobox(lblframe_cargo, values=[], width=10, state="readonly")
         self.cbbx_ghe.grid(row=0, column=1, sticky=tk.W, padx=10)
         self.cbbx_ghe.bind("<<ComboboxSelected>>", self.atualizar_cargos_por_ghe)
 
@@ -117,6 +117,7 @@ class genAnuencias:
 
         # Carregar GHEs do JSON
         self.ghe_data = self.carregar_ghe_json()
+        self.cbbx_ghe['values'] = sorted(self.ghe_data.keys())
 
     def carregar_ghe_json(self):
         arquivo = os.path.join(caminho_base, 'ghe_config.json')

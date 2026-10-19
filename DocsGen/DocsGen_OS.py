@@ -62,7 +62,7 @@ class genOrdenServico:
         self.entr_apelido.grid(row=1, column=5, sticky=tk.W, pady=10)
 
         ttk.Label(lblframe_dados_documentos, text="GHE: ").grid(row=2, column=0, sticky=tk.W)
-        self.cbbx_ghe = ttk.Combobox(lblframe_dados_documentos, values=["01", "02", "03", "04", "05"], width=40)
+        self.cbbx_ghe = ttk.Combobox(lblframe_dados_documentos, values=[], width=40)
         self.cbbx_ghe.grid(row=2, column=1, sticky=tk.W, pady=10)
         self.cbbx_ghe.bind("<<ComboboxSelected>>", self.update_funcao)
 
@@ -73,7 +73,7 @@ class genOrdenServico:
         ttk.Label(lblframe_dados_documentos, text="Obs: Os EPIs são definidos de acordo com o GHE selecionado. ").grid(row=2, column=5, columnspan=4 ,sticky=tk.W)
 
         ttk.Label(lblframe_dados_documentos, text="HSE Responsável: ").grid(row=3, column=0, sticky=tk.W)
-        self.cbbx_hse = ttk.Combobox(lblframe_dados_documentos, values=["MANOEL JEFETE"])
+        self.cbbx_hse = ttk.Combobox(lblframe_dados_documentos, values=[], width=40)
         self.cbbx_hse.grid(row=3, column=1, sticky=tk.W, pady=10)
 
         #LabelFrame dentro do Frame - Riscos Físicos
@@ -256,6 +256,30 @@ class genOrdenServico:
 
         # Carregar GHEs do JSON
         self.ghe_data = self.carregar_ghe_json()
+        self.cbbx_ghe['values'] = sorted(self.ghe_data.keys())
+
+        # Carregar HSEs da lista
+        self.lista_hses = self.carregar_hses()
+        self.cbbx_hse['values'] = list(self.lista_hses.keys())
+
+    def carregar_hses(self):
+        hses = {}
+        arquivo = os.path.join(caminho_base, 'listaHSE.txt')
+        if os.path.exists(arquivo):
+            try:
+                with open(arquivo, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        parts = line.strip().split(';')
+                        if len(parts) >= 3:
+                            # FUNCAO;NOME;REGISTRO
+                            role = parts[0].strip()
+                            name = parts[1].strip()
+                            reg = parts[2].strip()
+                            funcao = "Técnico(a) de Segurança do Trabalho" if role.upper() == "HSE" else role
+                            hses[name] = {"nome": name, "registro": reg, "funcao": funcao}
+            except Exception as e:
+                print(f"Erro ao ler listaHSE.txt: {e}")
+        return hses
 
     def carregar_ghe_json(self):
         arquivo = os.path.join(caminho_base, 'ghe_config.json')
@@ -480,12 +504,16 @@ class genOrdenServico:
             if varMeca.get():
                 riscosMecanicos += ckbMeca.cget("text") + "\n"      
         
-        hseNome = self.cbbx_hse.get()
-
-        if hseNome == "MANOEL JEFETE":
-            nomeHSE = "MANOEL JEFETE DA SILVA TENORIO - MEDSE"
-            registroHSE = "MTE/RN: 1805"
-            funcaoHSE = "Técnico(a) de Segurança do Trabalho"
+        hseNome = self.cbbx_hse.get().strip()
+        dados_hse = self.lista_hses.get(hseNome)
+        if dados_hse:
+            nomeHSE = dados_hse["nome"]
+            registroHSE = dados_hse["registro"]
+            funcaoHSE = dados_hse["funcao"]
+        else:
+            nomeHSE = hseNome
+            registroHSE = ""
+            funcaoHSE = ""
 
         # Receber os dados
         substituicoes =  {
@@ -504,18 +532,9 @@ class genOrdenServico:
         # Recebe tipo de GHE
         tipoGHE = self.cbbx_ghe.get()
 
-        if tipoGHE == "01":
-            documentoModelo = 'osst_ghe01.docx'
-        elif tipoGHE == "02":
-            documentoModelo = 'osst_ghe02.docx'
-        elif tipoGHE == "03":
-            documentoModelo = 'osst_ghe03.docx'
-        elif tipoGHE == "04":
-            documentoModelo = 'osst_ghe04.docx'
-        elif tipoGHE == "05":
-            documentoModelo = 'osst_ghe05.docx'
-        else:
-            print("Outros")
+        if tipoGHE not in self.ghe_data:
+            raise Exception("Selecione um GHE válido.")
+        documentoModelo = f'osst_ghe{tipoGHE}.docx'
 
         # Caminho do modelo e verificação
         modelo_path = os.path.join(caminho_base,'osst_mod', documentoModelo)
